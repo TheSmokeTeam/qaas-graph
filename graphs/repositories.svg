@@ -1,0 +1,40 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1070" height="486" viewBox="0 0 1070 486" role="img" aria-labelledby="title desc">
+<title id="title">QaaS repository dependencies</title>
+<desc id="desc">Arrows point from consuming repositories to the repositories that produce their dependencies.</desc>
+<defs><marker id="arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto"><path d="M0,0 L10,3.5 L0,7 Z" fill="#64748b"/></marker></defs>
+<style>.node{fill:#eff6ff;stroke:#2563eb;stroke-width:1.5}.label{font:600 14px system-ui,sans-serif;fill:#0f172a}.edge{stroke:#64748b;stroke-width:1.5;fill:none;marker-end:url(#arrow)}.edge-label{font:11px system-ui,sans-serif;fill:#475569}</style>
+<path class="edge" d="M670.0,67.0 C715.0,67.0 715.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="715.0" y="150.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M670.0,155.0 C715.0,155.0 715.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="715.0" y="194.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M670.0,243.0 C715.0,243.0 715.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="715.0" y="238.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M670.0,331.0 C715.0,331.0 715.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="715.0" y="282.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M310.0,199.0 C535.0,199.0 535.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="535.0" y="216.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M310.0,199.0 C355.0,199.0 355.0,419.0 400.0,419.0"/>
+<text class="edge-label" x="355.0" y="304.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M670.0,419.0 C715.0,419.0 715.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="715.0" y="326.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M310.0,287.0 C535.0,287.0 535.0,243.0 760.0,243.0"/>
+<text class="edge-label" x="535.0" y="260.0" text-anchor="middle">PackageReference</text>
+<path class="edge" d="M310.0,287.0 C355.0,287.0 355.0,419.0 400.0,419.0"/>
+<text class="edge-label" x="355.0" y="348.0" text-anchor="middle">PackageReference</text>
+<rect class="node" x="400.0" y="40.0" width="270" height="54" rx="8"/>
+<text class="label" x="535.0" y="72.0" text-anchor="middle">QaaS.Common.Assertions</text>
+<rect class="node" x="400.0" y="128.0" width="270" height="54" rx="8"/>
+<text class="label" x="535.0" y="160.0" text-anchor="middle">QaaS.Common.Generators</text>
+<rect class="node" x="400.0" y="216.0" width="270" height="54" rx="8"/>
+<text class="label" x="535.0" y="248.0" text-anchor="middle">QaaS.Common.Probes</text>
+<rect class="node" x="400.0" y="304.0" width="270" height="54" rx="8"/>
+<text class="label" x="535.0" y="336.0" text-anchor="middle">QaaS.Common.Processors</text>
+<rect class="node" x="400.0" y="392.0" width="270" height="54" rx="8"/>
+<text class="label" x="535.0" y="424.0" text-anchor="middle">QaaS.Mocker.CommunicationObjects</text>
+<rect class="node" x="760.0" y="216.0" width="270" height="54" rx="8"/>
+<text class="label" x="895.0" y="248.0" text-anchor="middle">QaaS.Framework</text>
+<rect class="node" x="40.0" y="172.0" width="270" height="54" rx="8"/>
+<text class="label" x="175.0" y="204.0" text-anchor="middle">QaaS.Mocker</text>
+<rect class="node" x="40.0" y="260.0" width="270" height="54" rx="8"/>
+<text class="label" x="175.0" y="292.0" text-anchor="middle">QaaS.Runner</text>
+</svg>

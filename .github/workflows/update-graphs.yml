@@ -1,0 +1,131 @@
+name: Update ecosystem graphs
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"
+  repository_dispatch:
+    types: [qaas-source-updated]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: update-ecosystem-graphs
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout graph repository
+        uses: actions/checkout@v5
+        with:
+          path: qaas-graph
+          fetch-depth: 0
+
+      - name: Checkout QaaS.Framework
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Framework
+          path: QaaS.Framework
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Common.Assertions
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Common.Assertions
+          path: QaaS.Common.Assertions
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Common.Generators
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Common.Generators
+          path: QaaS.Common.Generators
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Common.Probes
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Common.Probes
+          path: QaaS.Common.Probes
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Common.Processors
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Common.Processors
+          path: QaaS.Common.Processors
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Mocker.CommunicationObjects
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Mocker.CommunicationObjects
+          path: QaaS.Mocker.CommunicationObjects
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Mocker
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Mocker
+          path: QaaS.Mocker
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Checkout QaaS.Runner
+        uses: actions/checkout@v5
+        with:
+          repository: TheSmokeTeam/QaaS.Runner
+          path: QaaS.Runner
+          token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: 10.0.x
+
+      - name: Install Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install graph tooling
+        working-directory: qaas-graph
+        run: python -m pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: qaas-graph
+        run: python -m unittest discover -s tests -v
+
+      - name: Generate graphs
+        working-directory: qaas-graph
+        run: scripts/generate.sh
+
+      - name: Open or update graph pull request
+        working-directory: qaas-graph
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- README.md graphs graphify-out; then
+            echo "Graph artifacts are current."
+            exit 0
+          fi
+
+          branch="automation/update-graphs"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -B "$branch"
+          git add README.md graphs graphify-out
+          git commit -m "chore: update ecosystem graphs"
+          git push --force-with-lease origin "$branch"
+
+          if ! gh pr view "$branch" --json url >/dev/null 2>&1; then
+            gh pr create \
+              --base "${GITHUB_REF_NAME}" \
+              --head "$branch" \
+              --title "chore: update ecosystem graphs" \
+              --body "Automated refresh of the evaluated MSBuild dependency graph and merged Graphify code graph."
+          fi

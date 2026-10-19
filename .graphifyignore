@@ -1,0 +1,17 @@
+# Do not recursively index generated graph data when Graphify is run against
+# qaas-graph itself. These paths are still committed according to .gitignore.
+.graphify-cache/
+graphify-out/
+graphs/
+
+# Runtime and editor noise
+.venv/
+venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.idea/
+.vscode/
+bin/
+obj/

@@ -1,0 +1,56 @@
+# Operating-system metadata
+.DS_Store
+Thumbs.db
+
+# Editors and local IDE state
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# Python runtime, environments, and test/tool caches
+__pycache__/
+*.py[cod]
+*$py.class
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+
+# Logs and temporary files
+*.log
+*.tmp
+*.temp
+
+# .NET output if helper projects are added later
+bin/
+obj/
+
+# Graphify per-repository extraction cache. The final graph.json and graph.html
+# under graphify-out/ are intentionally committed.
+.graphify-cache/
+
+# Transient files produced by running Graphify directly in this repository.
+graphify-out/cache/
+graphify-out/.graphify_python
+graphify-out/.graphify_root
+graphify-out/.graphify_detect.json
+graphify-out/.graphify_extract.json
+graphify-out/.graphify_ast.json
+graphify-out/.graphify_semantic.json
+graphify-out/.graphify_semantic_new.json
+graphify-out/.graphify_cached.json
+graphify-out/.graphify_uncached.txt
+graphify-out/.graphify_chunk_*.json
+graphify-out/.needs_update
+graphify-out/cost.json

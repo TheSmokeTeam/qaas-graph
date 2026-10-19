@@ -1,0 +1,18 @@
+flowchart LR
+    R0["QaaS.Common.Assertions"]
+    R1["QaaS.Common.Generators"]
+    R2["QaaS.Common.Probes"]
+    R3["QaaS.Common.Processors"]
+    R4["QaaS.Framework"]
+    R5["QaaS.Mocker"]
+    R6["QaaS.Mocker.CommunicationObjects"]
+    R7["QaaS.Runner"]
+    R0 -->|"PackageReference"| R4
+    R1 -->|"PackageReference"| R4
+    R2 -->|"PackageReference"| R4
+    R3 -->|"PackageReference"| R4
+    R5 -->|"PackageReference"| R4
+    R5 -->|"PackageReference"| R6
+    R6 -->|"PackageReference"| R4
+    R7 -->|"PackageReference"| R4
+    R7 -->|"PackageReference"| R6

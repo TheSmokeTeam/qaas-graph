@@ -1,0 +1,36 @@
+version: 1
+
+# Paths are resolved relative to this file. Keep this registry explicit so local
+# generation and CI scan the same set of repositories.
+repositories:
+  - name: QaaS.Framework
+    path: ../QaaS.Framework
+    url: https://github.com/TheSmokeTeam/QaaS.Framework.git
+  - name: QaaS.Common.Assertions
+    path: ../QaaS.Common.Assertions
+    url: https://github.com/TheSmokeTeam/QaaS.Common.Assertions.git
+  - name: QaaS.Common.Generators
+    path: ../QaaS.Common.Generators
+    url: https://github.com/TheSmokeTeam/QaaS.Common.Generators.git
+  - name: QaaS.Common.Probes
+    path: ../QaaS.Common.Probes
+    url: https://github.com/TheSmokeTeam/QaaS.Common.Probes.git
+  - name: QaaS.Common.Processors
+    path: ../QaaS.Common.Processors
+    url: https://github.com/TheSmokeTeam/QaaS.Common.Processors.git
+  - name: QaaS.Mocker.CommunicationObjects
+    path: ../QaaS.Mocker.CommunicationObjects
+    url: https://github.com/TheSmokeTeam/QaaS.Mocker.CommunicationObjects.git
+  - name: QaaS.Mocker
+    path: ../QaaS.Mocker
+    url: https://github.com/TheSmokeTeam/QaaS.Mocker.git
+  - name: QaaS.Runner
+    path: ../QaaS.Runner
+    url: https://github.com/TheSmokeTeam/QaaS.Runner.git
+
+# Add another named evaluation when a repository introduces conditional
+# local-vs-NuGet references. Every evaluation is merged into the same logical
+# graph while retaining the evaluation name on each reference.
+evaluations:
+  - name: default
+    properties: {}
