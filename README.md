@@ -3,6 +3,8 @@
 This repository is the reproducible architecture map for the QaaS repositories.
 It keeps two complementary views:
 
+**[Open the interactive QaaS ecosystem graph](https://thesmoketeam.github.io/qaas-graph/)**
+
 - `graphs/repositories.json` is the evaluated MSBuild dependency model. It records repositories, projects, published package identities, `ProjectReference` edges, `PackageReference` edges, versions, target frameworks, evaluation modes, and source commit SHAs.
 - `graphify-out/graph.json` and `graphify-out/graph.html` are the merged code-level Graphify graph and interactive visualization.
 
@@ -83,3 +85,7 @@ python3 -m unittest discover -s tests -v
 ## CI
 
 `.github/workflows/update-graphs.yml` rebuilds the graphs weekly or on demand. It records each checked-out source commit in `graphs/repositories.json` and opens or updates an `automation/update-graphs` pull request when committed artifacts change. Private source repositories require a `QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use the workflow token.
+
+`.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
+site root whenever the graph or deployment workflow changes on `main`. The live
+site is available at <https://thesmoketeam.github.io/qaas-graph/>.
