@@ -3,7 +3,8 @@ name: Update ecosystem graphs
 on:
   workflow_dispatch:
   schedule:
-    - cron: "17 3 * * 1"
+    - cron: "0 20 * * 6"
+      timezone: "Asia/Jerusalem"
   repository_dispatch:
     types: [qaas-source-updated]
 
