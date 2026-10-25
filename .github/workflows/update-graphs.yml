@@ -102,6 +102,8 @@ jobs:
 
       - name: Generate graphs
         working-directory: qaas-graph
+        env:
+          QAAS_GRAPH_CI: "true"
         run: scripts/generate.sh
 
       - name: Open or update graph pull request
