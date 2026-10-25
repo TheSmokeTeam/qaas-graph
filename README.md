@@ -41,7 +41,8 @@ graph artifacts on a workstation.
 To request an update, run the
 [Update ecosystem graphs workflow](https://github.com/TheSmokeTeam/qaas-graph/actions/workflows/update-graphs.yml)
 from the GitHub Actions page. The same workflow also runs weekly and accepts the
-`qaas-source-updated` repository-dispatch event from source-repository automation.
+`qaas-package-mirror-synced` repository-dispatch event emitted after a successful
+full `QaaS.PackageMirror` sync.
 
 The workflow checks out every source repository, runs the tests, creates both graph
 views, and opens or refreshes the `automation/update-graphs` pull request when the
@@ -83,12 +84,13 @@ python3 -m unittest discover -s tests -v
 ## CI
 
 `.github/workflows/update-graphs.yml` is the only supported graph-generation entry
-point. It rebuilds the graphs weekly, on demand, or after a `qaas-source-updated`
-dispatch. It records each checked-out source commit in `graphs/repositories.json`
-and opens or updates an `automation/update-graphs` pull request when committed
-artifacts change. Private source repositories require a `QAAS_GRAPH_TOKEN`
-repository secret with read access; public repositories can use the workflow token.
+point. It rebuilds the graphs weekly, on demand, or after a
+`qaas-package-mirror-synced` dispatch. It records each checked-out source commit in
+`graphs/repositories.json` and opens or updates an `automation/update-graphs` pull
+request when committed artifacts change. Private source repositories require a
+`QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use
+the workflow token.
 
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
-site root whenever the graph or deployment workflow changes on `main`. The live
-site is available at <https://thesmoketeam.github.io/qaas-graph/>.
+site root whenever generated graph artifacts or the deployment workflow change on
+`main`. The live site is available at <https://thesmoketeam.github.io/qaas-graph/>.

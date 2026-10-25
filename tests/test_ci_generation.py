@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).parents[1]
 GENERATE = ROOT / "scripts" / "generate.sh"
 UPDATE_WORKFLOW = ROOT / ".github" / "workflows" / "update-graphs.yml"
+DEPLOY_WORKFLOW = ROOT / ".github" / "workflows" / "deploy-pages.yml"
 
 
 class CIGenerationBoundaryTests(unittest.TestCase):
@@ -47,6 +48,14 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertIn('QAAS_GRAPH_CI: "true"', workflow)
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("repository_dispatch:", workflow)
+        self.assertIn("types: [qaas-package-mirror-synced]", workflow)
+
+    def test_deploy_runs_after_generated_graph_artifacts_reach_main(self) -> None:
+        workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn("branches: [main]", workflow)
+        self.assertIn("- graphify-out/**", workflow)
+        self.assertIn("- graphs/**", workflow)
 
 
 if __name__ == "__main__":
