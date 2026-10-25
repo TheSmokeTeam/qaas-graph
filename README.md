@@ -50,6 +50,36 @@ committed artifacts changed. Review and merge that pull request entirely on GitH
 `scripts/generate.sh` intentionally refuses to run outside GitHub Actions so the CI
 environment remains the single graph producer.
 
+### Automation flow
+
+```mermaid
+flowchart TD
+    A["PackageMirror full sync"] --> B{"Sync successful?"}
+    B -->|No| C["Stop; graph CI is not triggered"]
+    B -->|Yes| D["Dispatch qaas-package-mirror-synced"]
+    D --> E["Run Update ecosystem graphs CI"]
+    E --> F{"Graph artifacts changed?"}
+    F -->|No| G["Finish without a pull request"]
+    F -->|Yes| H["Open or update automation/update-graphs PR"]
+    H --> I["Merge PR into main"]
+    I --> J["Deploy interactive graph to GitHub Pages"]
+```
+
+The upstream trigger runs only after a successful **full PackageMirror sync**
+started with `workflow_dispatch`. Two PackageMirror modes intentionally do not
+trigger graph generation:
+
+- A push-validation run on PackageMirror `master` only builds and tests the mirror
+  implementation; it does not rebuild mirrored packages or schemas.
+- A run with `docs_drift_check_only: true` verifies generated documentation without
+  performing the normal mirror update.
+
+After receiving the dispatch, graph CI opens a pull request only when generated
+artifacts differ from the committed versions. Merging that pull request into
+`main` triggers `.github/workflows/deploy-pages.yml`. The PackageMirror
+`PACKAGE_MIRROR_TOKEN` must have `Contents: write` access to this repository so it
+can create the repository-dispatch event.
+
 The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getItem`,
 so imported props/targets and conditional items are evaluated by MSBuild rather than
 guessed from XML. If a repository needs more than one CI evaluation mode, declare
