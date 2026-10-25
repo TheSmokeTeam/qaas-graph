@@ -116,9 +116,3 @@ repository secret with read access; public repositories can use the workflow tok
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
 site root whenever generated graph artifacts or the deployment workflow change on
 `main`. The live site is available at <https://thesmoketeam.github.io/qaas-graph/>.
-
-This repository owns these two workflow files. GitHub's Actions UI also shows a
-third active entry named `Dependency Graph` at `dynamic/dependabot/update-graph`.
-That is a [GitHub-managed Dependabot graph job](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-graph-data#dependabot-graph-jobs)
-that submits Python dependency data to GitHub's dependency graph; it is not part
-of the QaaS graph generation or deployment chain.
