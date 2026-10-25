@@ -49,6 +49,7 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("repository_dispatch:", workflow)
         self.assertIn("types: [qaas-package-mirror-synced]", workflow)
+        self.assertNotIn("schedule:", workflow)
 
     def test_deploy_runs_after_generated_graph_artifacts_reach_main(self) -> None:
         workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")

@@ -2,9 +2,6 @@ name: Update ecosystem graphs
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 20 * * 6"
-      timezone: "Asia/Jerusalem"
   repository_dispatch:
     types: [qaas-package-mirror-synced]
 
