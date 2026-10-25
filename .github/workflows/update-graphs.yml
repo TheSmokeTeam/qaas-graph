@@ -6,7 +6,7 @@ on:
     - cron: "0 20 * * 6"
       timezone: "Asia/Jerusalem"
   repository_dispatch:
-    types: [qaas-source-updated]
+    types: [qaas-package-mirror-synced]
 
 permissions:
   contents: write
@@ -102,12 +102,15 @@ jobs:
 
       - name: Generate graphs
         working-directory: qaas-graph
+        env:
+          QAAS_GRAPH_CI: "true"
         run: scripts/generate.sh
 
       - name: Open or update graph pull request
         working-directory: qaas-graph
         env:
           GH_TOKEN: ${{ github.token }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
         run: |
           set -euo pipefail
           if git diff --quiet -- README.md graphs graphify-out; then
@@ -125,7 +128,7 @@ jobs:
 
           if ! gh pr view "$branch" --json url >/dev/null 2>&1; then
             gh pr create \
-              --base "${GITHUB_REF_NAME}" \
+              --base "$DEFAULT_BRANCH" \
               --head "$branch" \
               --title "chore: update ecosystem graphs" \
               --body "Automated refresh of the evaluated MSBuild dependency graph and merged Graphify code graph."

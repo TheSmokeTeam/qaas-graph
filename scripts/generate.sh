@@ -28,6 +28,15 @@ while [[ $# -gt 0 ]]; do
   shift
 done
 
+if [[ "${GITHUB_ACTIONS:-}" != "true" || "${QAAS_GRAPH_CI:-}" != "true" ]]; then
+  cat >&2 <<'EOF'
+Graph generation is CI-only.
+Run the "Update ecosystem graphs" workflow in GitHub Actions instead:
+https://github.com/TheSmokeTeam/qaas-graph/actions/workflows/update-graphs.yml
+EOF
+  exit 1
+fi
+
 cd "$repo_dir"
 
 if [[ "$mode" != "graphify" ]]; then

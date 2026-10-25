@@ -33,29 +33,58 @@ flowchart LR
 ```
 <!-- repository-graph:end -->
 
-## Generate locally
+## Update the graphs
 
-The source repositories must be sibling directories of this repository, as declared in `repositories.yml`.
+Graph creation is CI-only. Do not clone the QaaS source repositories or regenerate
+graph artifacts on a workstation.
 
-```bash
-python3 -m pip install -r requirements.txt
-scripts/generate.sh
+To request an update, run the
+[Update ecosystem graphs workflow](https://github.com/TheSmokeTeam/qaas-graph/actions/workflows/update-graphs.yml)
+from the GitHub Actions page. The same workflow also runs weekly and accepts the
+`qaas-package-mirror-synced` repository-dispatch event emitted after a successful
+full `QaaS.PackageMirror` sync.
+
+The workflow checks out every source repository, runs the tests, creates both graph
+views, and opens or refreshes the `automation/update-graphs` pull request when the
+committed artifacts changed. Review and merge that pull request entirely on GitHub.
+`scripts/generate.sh` intentionally refuses to run outside GitHub Actions so the CI
+environment remains the single graph producer.
+
+### Automation flow
+
+```mermaid
+flowchart TD
+    A["PackageMirror full sync"] --> B{"Sync successful?"}
+    B -->|No| C["Stop; graph CI is not triggered"]
+    B -->|Yes| D["Dispatch qaas-package-mirror-synced"]
+    D --> E["Run Update ecosystem graphs CI"]
+    E --> F{"Graph artifacts changed?"}
+    F -->|No| G["Finish without a pull request"]
+    F -->|Yes| H["Open or update automation/update-graphs PR"]
+    H --> I["Merge PR into main"]
+    I --> J["Deploy interactive graph to GitHub Pages"]
 ```
 
-Useful narrower commands:
+The upstream trigger runs only after a successful **full PackageMirror sync**
+started with `workflow_dispatch`. Two PackageMirror modes intentionally do not
+trigger graph generation:
 
-```bash
-# Fast, deterministic .NET architecture graph only
-scripts/generate.sh --dependencies-only
+- A push-validation run on PackageMirror `master` only builds and tests the mirror
+  implementation; it does not rebuild mirrored packages or schemas.
+- A run with `docs_drift_check_only: true` verifies generated documentation without
+  performing the normal mirror update.
 
-# Code-level Graphify extraction and merge only
-scripts/generate.sh --graphify-only
+After receiving the dispatch, graph CI opens a pull request only when generated
+artifacts differ from the committed versions. Merging that pull request into
+`main` triggers `.github/workflows/deploy-pages.yml`. The PackageMirror
+`PACKAGE_MIRROR_TOKEN` must have `Contents: write` access to this repository so it
+can create the repository-dispatch event.
 
-# Force Graphify to rescan every source repository
-scripts/generate.sh --graphify-only --force
-```
-
-The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getItem`, so imported props/targets and conditional items are evaluated by MSBuild rather than guessed from XML. If local development and CI use different MSBuild properties, add both modes under `evaluations` in `repositories.yml`; their references are merged while the evaluation names remain attached to each edge.
+The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getItem`,
+so imported props/targets and conditional items are evaluated by MSBuild rather than
+guessed from XML. If a repository needs more than one CI evaluation mode, declare
+them under `evaluations` in `repositories.yml`; their references are merged while
+the evaluation names remain attached to each edge.
 
 ## Outputs
 
@@ -69,14 +98,14 @@ The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getIte
 | `graphify-out/graph.html` | Interactive code graph | Yes |
 | `.graphify-cache/` | Per-repository extraction cache | No |
 
-`.gitignore` keeps machine-local state, environments, test caches, temporary
-Graphify files, and `.graphify-cache/` out of commits while deliberately leaving
-the final `graphs/` and `graphify-out/` artifacts visible to Git.
+`.gitignore` keeps runtime state, environments, test caches, temporary Graphify
+files, and `.graphify-cache/` out of commits while deliberately leaving the final
+`graphs/` and `graphify-out/` artifacts visible to Git.
 `.graphifyignore` is separate: it prevents Graphify from recursively indexing
 the generated graph data if this repository itself is scanned. Source-repository
 scans continue to respect each source repository's own ignore rules.
 
-Run the extractor tests with:
+Code-only checks may still be run locally; they do not update graph artifacts:
 
 ```bash
 python3 -m unittest discover -s tests -v
@@ -84,8 +113,14 @@ python3 -m unittest discover -s tests -v
 
 ## CI
 
-`.github/workflows/update-graphs.yml` rebuilds the graphs weekly or on demand. It records each checked-out source commit in `graphs/repositories.json` and opens or updates an `automation/update-graphs` pull request when committed artifacts change. Private source repositories require a `QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use the workflow token.
+`.github/workflows/update-graphs.yml` is the only supported graph-generation entry
+point. It rebuilds the graphs weekly, on demand, or after a
+`qaas-package-mirror-synced` dispatch. It records each checked-out source commit in
+`graphs/repositories.json` and opens or updates an `automation/update-graphs` pull
+request when committed artifacts change. Private source repositories require a
+`QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use
+the workflow token.
 
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
-site root whenever the graph or deployment workflow changes on `main`. The live
-site is available at <https://thesmoketeam.github.io/qaas-graph/>.
+site root whenever generated graph artifacts or the deployment workflow change on
+`main`. The live site is available at <https://thesmoketeam.github.io/qaas-graph/>.

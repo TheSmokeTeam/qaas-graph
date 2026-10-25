@@ -1,7 +1,7 @@
 version: 1
 
-# Paths are resolved relative to this file. Keep this registry explicit so local
-# generation and CI scan the same set of repositories.
+# Paths are resolved relative to this file. The update workflow checks out source
+# repositories at these sibling paths before running CI-only graph generation.
 repositories:
   - name: QaaS.Framework
     path: ../QaaS.Framework
@@ -28,9 +28,9 @@ repositories:
     path: ../QaaS.Runner
     url: https://github.com/TheSmokeTeam/QaaS.Runner.git
 
-# Add another named evaluation when a repository introduces conditional
-# local-vs-NuGet references. Every evaluation is merged into the same logical
-# graph while retaining the evaluation name on each reference.
+# Add another named evaluation when a repository introduces conditional reference
+# modes. Every evaluation is merged into the same logical graph while retaining
+# the evaluation name on each reference.
 evaluations:
   - name: default
     properties: {}
