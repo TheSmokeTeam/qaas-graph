@@ -63,6 +63,32 @@ environment remains the single graph producer.
 6. Merging that pull request into `main` starts the `Deploy interactive graph`
    workflow, which publishes the interactive graph to GitHub Pages.
 
+### How artifact changes are detected
+
+An artifact in this repository is a file generated from the checked-out QaaS
+source repositories rather than written manually. The committed graph artifacts
+are `graphs/repositories.json`, `graphs/repositories.mmd`,
+`graphs/repositories.svg`, `graphify-out/graph.json`, and
+`graphify-out/graph.html`. The generated Mermaid block in `README.md` is checked
+at the same time.
+
+After regeneration, the workflow runs:
+
+```bash
+git diff --quiet -- README.md graphs graphify-out
+```
+
+Git compares the regenerated contents with the versions in the commit that the
+workflow checked out. File timestamps do not matter. If all tracked contents are
+identical, the command succeeds and the workflow exits without creating a pull
+request. If any content differs, the command reports a difference and CI commits
+those paths to `automation/update-graphs`, then opens or updates its pull request.
+
+This use of *artifact* is distinct from a temporary GitHub Actions artifact. The
+graph files above are committed repository outputs. During deployment,
+`actions/upload-pages-artifact` separately packages `graphify-out/graph.html` for
+GitHub Pages.
+
 Two PackageMirror modes intentionally do not dispatch a graph update:
 
 - A push-validation run on PackageMirror `master` only builds and tests the mirror
