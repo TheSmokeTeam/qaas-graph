@@ -52,33 +52,26 @@ environment remains the single graph producer.
 
 ### Automation flow
 
-```mermaid
-flowchart TD
-    A["PackageMirror full sync"] --> B{"Sync successful?"}
-    B -->|No| C["Stop; graph CI is not triggered"]
-    B -->|Yes| D["Dispatch qaas-package-mirror-synced"]
-    D --> E["Run Update ecosystem graphs CI"]
-    E --> F{"Graph artifacts changed?"}
-    F -->|No| G["Finish without a pull request"]
-    F -->|Yes| H["Open or update automation/update-graphs PR"]
-    H --> I["Merge PR into main"]
-    I --> J["Deploy interactive graph to GitHub Pages"]
-```
+1. A full PackageMirror sync is started with `workflow_dispatch`.
+2. If the sync fails, the chain stops. If it succeeds, PackageMirror dispatches
+   the `qaas-package-mirror-synced` event to this repository.
+3. The `Update ecosystem graphs` workflow checks out the registered source
+   repositories, runs the tests, and regenerates the graph artifacts.
+4. If the artifacts are unchanged, the workflow finishes without a pull request.
+5. If they changed, the workflow opens or updates the
+   `automation/update-graphs` pull request.
+6. Merging that pull request into `main` starts the `Deploy interactive graph`
+   workflow, which publishes the interactive graph to GitHub Pages.
 
-The upstream trigger runs only after a successful **full PackageMirror sync**
-started with `workflow_dispatch`. Two PackageMirror modes intentionally do not
-trigger graph generation:
+Two PackageMirror modes intentionally do not dispatch a graph update:
 
 - A push-validation run on PackageMirror `master` only builds and tests the mirror
   implementation; it does not rebuild mirrored packages or schemas.
 - A run with `docs_drift_check_only: true` verifies generated documentation without
   performing the normal mirror update.
 
-After receiving the dispatch, graph CI opens a pull request only when generated
-artifacts differ from the committed versions. Merging that pull request into
-`main` triggers `.github/workflows/deploy-pages.yml`. The PackageMirror
-`PACKAGE_MIRROR_TOKEN` must have `Contents: write` access to this repository so it
-can create the repository-dispatch event.
+The PackageMirror `PACKAGE_MIRROR_TOKEN` must have `Contents: write` access to this
+repository so it can create the repository-dispatch event.
 
 The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getItem`,
 so imported props/targets and conditional items are evaluated by MSBuild rather than
@@ -124,3 +117,9 @@ the workflow token.
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
 site root whenever generated graph artifacts or the deployment workflow change on
 `main`. The live site is available at <https://thesmoketeam.github.io/qaas-graph/>.
+
+This repository owns these two workflow files. GitHub's Actions UI also shows a
+third active entry named `Dependency Graph` at `dynamic/dependabot/update-graph`.
+That is a [GitHub-managed Dependabot graph job](https://docs.github.com/en/code-security/concepts/supply-chain-security/dependency-graph-data#dependabot-graph-jobs)
+that submits Python dependency data to GitHub's dependency graph; it is not part
+of the QaaS graph generation or deployment chain.
