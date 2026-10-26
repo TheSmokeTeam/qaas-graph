@@ -1,0 +1,5 @@
+*
+!Dockerfile.mcp
+!requirements-mcp.txt
+!graphify-out/
+!graphify-out/graph.json

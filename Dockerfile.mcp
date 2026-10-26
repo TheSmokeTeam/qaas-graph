@@ -1,0 +1,22 @@
+FROM python:3.12-slim
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    GRAPHIFY_QUERY_LOG_DISABLE=1
+
+WORKDIR /app
+
+COPY requirements-mcp.txt /app/requirements-mcp.txt
+RUN python -m pip install --no-cache-dir -r /app/requirements-mcp.txt
+
+RUN groupadd --gid 10001 graphify \
+    && useradd --create-home --uid 10001 --gid graphify graphify \
+    && install -d --owner graphify --group graphify /data
+
+COPY --chown=graphify:graphify graphify-out/graph.json /data/graph.json
+
+USER graphify
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh", "-ec", "test -n \"${GRAPHIFY_API_KEY:-}\" || { echo 'GRAPHIFY_API_KEY is required' >&2; exit 1; }; exec python -m graphify.serve /data/graph.json --transport http --host 0.0.0.0 --port 8080 --path /mcp --stateless"]

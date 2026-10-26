@@ -130,6 +130,97 @@ Code-only checks may still be run locally; they do not update graph artifacts:
 python3 -m unittest discover -s tests -v
 ```
 
+## Query the graph through remote MCP
+
+The repository deploys the committed `graphify-out/graph.json` as a query-only
+[Graphify Streamable HTTP MCP](https://github.com/Graphify-Labs/graphify/issues/1143)
+service. The service uses the built-in Graphify server; it does not clone source
+repositories, regenerate artifacts, or expose an update operation. A new immutable
+Cloud Run revision is deployed after a graph change reaches `main`.
+
+The endpoint is:
+
+```text
+POST https://<cloud-run-service>/mcp
+Authorization: Bearer <QAAS_GRAPH_MCP_TOKEN>
+```
+
+It exposes these graph-query tools: `query_graph`, `get_node`, `get_neighbors`,
+`get_community`, `god_nodes`, `graph_stats`, and `shortest_path`. Graphify also
+advertises `list_prs`, `get_pr_impact`, and `triage_prs`; disable those three
+client-side when the connection should be graph-only.
+
+### Codex
+
+Set `QAAS_GRAPH_MCP_TOKEN` in the environment used to launch Codex, then add:
+
+```toml
+[mcp_servers.qaas_graph]
+url = "https://<cloud-run-service>/mcp"
+bearer_token_env_var = "QAAS_GRAPH_MCP_TOKEN"
+required = true
+enabled = true
+enabled_tools = [
+  "query_graph",
+  "get_node",
+  "get_neighbors",
+  "get_community",
+  "god_nodes",
+  "graph_stats",
+  "shortest_path",
+]
+default_tools_approval_mode = "auto"
+startup_timeout_sec = 10
+tool_timeout_sec = 60
+```
+
+Codex CLI, the IDE extension, and the ChatGPT desktop app share this MCP
+configuration. Restart the client and use `/mcp` to confirm the connection.
+
+### Claude
+
+Add a custom **Web** connector under **Customize → Connectors**, provide the
+Cloud Run `/mcp` URL, choose fixed-header authentication, and add:
+
+```text
+Authorization: Bearer <QAAS_GRAPH_MCP_TOKEN>
+```
+
+Disable the three PR-analysis tools in the connector tool controls.
+
+### Cloud Run provisioning
+
+The deployment workflow expects these GitHub Actions repository variables:
+
+| Variable | Value |
+| --- | --- |
+| `GCP_PROJECT_ID` | Google Cloud project containing the service |
+| `GCP_REGION` | `me-west1` |
+| `GCP_WORKLOAD_IDENTITY_PROVIDER` | Full Workload Identity provider resource name |
+| `GCP_DEPLOY_SERVICE_ACCOUNT` | Service account impersonated by GitHub Actions |
+| `GCP_ARTIFACT_REPOSITORY` | `qaas-graph` |
+| `CLOUD_RUN_SERVICE` | `qaas-graph-mcp` |
+
+Provision an Artifact Registry Docker repository named `qaas-graph`, a runtime
+service account named `qaas-graph-mcp`, and a Secret Manager secret named
+`qaas-graph-mcp-api-key`. Give the runtime account access only to that secret.
+The GitHub deployment account needs permission to push to Artifact Registry,
+deploy and route Cloud Run revisions, impersonate the runtime account, and read
+the API-key secret for the post-deployment smoke test. Configure GitHub access
+through Workload Identity Federation rather than a service-account key.
+
+The service runs in `me-west1` with one warm instance, one vCPU, 512 MiB RAM,
+and a maximum of three instances. Cloud Run accepts public HTTPS requests so
+standard MCP clients can reach it; Graphify rejects requests without the API
+key. Rotate the key by adding a new version to `qaas-graph-mcp-api-key`, running
+the deployment workflow, and then updating client credentials.
+
+The workflow smoke-tests authentication, the MCP handshake, graph tool results,
+the exact node and edge counts from the committed artifact, source evidence, and
+warm-query latency. If the remote smoke test fails, traffic is restored to the
+previous serving revision. Use Cloud Run request count, latency, instance count,
+and 4xx/5xx metrics for operational monitoring.
+
 ## CI
 
 `.github/workflows/update-graphs.yml` is the only supported graph-generation entry
@@ -142,3 +233,6 @@ repository secret with read access; public repositories can use the workflow tok
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
 site root whenever generated graph artifacts or the deployment workflow change on
 `main`. The live site is available at <https://thesmoketeam.github.io/qaas-graph/>.
+
+`.github/workflows/deploy-mcp.yml` independently packages the committed graph and
+deploys the query-only MCP service. It never generates or modifies graph artifacts.

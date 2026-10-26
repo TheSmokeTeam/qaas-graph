@@ -1,0 +1,192 @@
+name: Deploy remote graph MCP
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - graphify-out/graph.json
+      - Dockerfile.mcp
+      - .dockerignore
+      - requirements-mcp.txt
+      - scripts/smoke_mcp.py
+      - .github/workflows/deploy-mcp.yml
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+concurrency:
+  group: remote-graph-mcp
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GCP_PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      GCP_REGION: ${{ vars.GCP_REGION || 'me-west1' }}
+      GCP_ARTIFACT_REPOSITORY: ${{ vars.GCP_ARTIFACT_REPOSITORY }}
+      CLOUD_RUN_SERVICE: ${{ vars.CLOUD_RUN_SERVICE }}
+      GCP_RUNTIME_SERVICE_ACCOUNT: qaas-graph-mcp@${{ vars.GCP_PROJECT_ID }}.iam.gserviceaccount.com
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - name: Validate deployment configuration
+        env:
+          GCP_WORKLOAD_IDENTITY_PROVIDER: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          GCP_DEPLOY_SERVICE_ACCOUNT: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+        run: |
+          set -euo pipefail
+          for variable in \
+            GCP_PROJECT_ID \
+            GCP_REGION \
+            GCP_ARTIFACT_REPOSITORY \
+            CLOUD_RUN_SERVICE \
+            GCP_WORKLOAD_IDENTITY_PROVIDER \
+            GCP_DEPLOY_SERVICE_ACCOUNT
+          do
+            if [[ -z "${!variable:-}" ]]; then
+              echo "Missing required GitHub Actions variable: $variable" >&2
+              exit 1
+            fi
+          done
+
+          image_uri="${GCP_REGION}-docker.pkg.dev/${GCP_PROJECT_ID}/${GCP_ARTIFACT_REPOSITORY}/${CLOUD_RUN_SERVICE}:${GITHUB_SHA}"
+          echo "IMAGE_URI=$image_uri" >> "$GITHUB_ENV"
+
+      - name: Build immutable MCP image
+        run: docker build --file Dockerfile.mcp --tag "$IMAGE_URI" .
+
+      - name: Start local MCP container
+        run: |
+          set -euo pipefail
+          local_key="$(python3 -c 'import secrets; print(secrets.token_urlsafe(48))')"
+          echo "::add-mask::$local_key"
+          echo "LOCAL_GRAPHIFY_API_KEY=$local_key" >> "$GITHUB_ENV"
+          docker run \
+            --detach \
+            --name qaas-graph-mcp-smoke \
+            --env GRAPHIFY_API_KEY="$local_key" \
+            --publish 127.0.0.1:18080:8080 \
+            "$IMAGE_URI"
+
+      - name: Smoke-test local MCP container
+        run: |
+          set -euo pipefail
+          export GRAPHIFY_API_KEY="$LOCAL_GRAPHIFY_API_KEY"
+          if ! python3 scripts/smoke_mcp.py \
+            --url http://127.0.0.1:18080/mcp \
+            --graph graphify-out/graph.json \
+            --max-p95-seconds 2
+          then
+            docker logs qaas-graph-mcp-smoke
+            exit 1
+          fi
+
+      - name: Stop local MCP container
+        if: always()
+        run: docker rm --force qaas-graph-mcp-smoke 2>/dev/null || true
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Install Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v3
+
+      - name: Configure Artifact Registry authentication
+        run: gcloud auth configure-docker "${GCP_REGION}-docker.pkg.dev" --quiet
+
+      - name: Push commit-tagged image
+        run: docker push "$IMAGE_URI"
+
+      - name: Capture current serving revision
+        run: |
+          set -euo pipefail
+          previous_revision=""
+          if gcloud run services describe "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" >/dev/null 2>&1
+          then
+            service_description="$RUNNER_TEMP/cloud-run-before.json"
+            gcloud run services describe "$CLOUD_RUN_SERVICE" \
+              --project "$GCP_PROJECT_ID" \
+              --region "$GCP_REGION" \
+              --format=json > "$service_description"
+            previous_revision="$(python3 -c 'import json, sys; traffic = json.load(open(sys.argv[1], encoding="utf-8")).get("status", {}).get("traffic", []); revisions = [item for item in traffic if item.get("revisionName")]; print(max(revisions, key=lambda item: item.get("percent", 0))["revisionName"] if revisions else "")' "$service_description")"
+          fi
+          echo "PREVIOUS_REVISION=$previous_revision" >> "$GITHUB_ENV"
+
+      - name: Deploy MCP to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          project_id: ${{ vars.GCP_PROJECT_ID }}
+          region: ${{ vars.GCP_REGION || 'me-west1' }}
+          service: ${{ vars.CLOUD_RUN_SERVICE }}
+          image: ${{ env.IMAGE_URI }}
+          wait: true
+          env_vars: GRAPHIFY_QUERY_LOG_DISABLE=1
+          secrets: GRAPHIFY_API_KEY=qaas-graph-mcp-api-key:latest
+          flags: >-
+            --service-account=${{ env.GCP_RUNTIME_SERVICE_ACCOUNT }}
+            --cpu=1
+            --memory=512Mi
+            --min=1
+            --max=3
+            --concurrency=20
+            --timeout=300
+            --ingress=all
+            --allow-unauthenticated
+            --port=8080
+
+      - name: Smoke-test deployed MCP
+        id: remote-smoke
+        continue-on-error: true
+        env:
+          MCP_URL: ${{ steps.deploy.outputs.url }}/mcp
+        run: |
+          set -euo pipefail
+          api_key="$(gcloud secrets versions access latest \
+            --secret qaas-graph-mcp-api-key \
+            --project "$GCP_PROJECT_ID")"
+          echo "::add-mask::$api_key"
+          export GRAPHIFY_API_KEY="$api_key"
+          python3 scripts/smoke_mcp.py \
+            --url "$MCP_URL" \
+            --graph graphify-out/graph.json \
+            --startup-timeout 60 \
+            --max-p95-seconds 2
+
+      - name: Restore previous revision after failed smoke test
+        if: steps.remote-smoke.outcome == 'failure' && env.PREVIOUS_REVISION != ''
+        run: |
+          gcloud run services update-traffic "$CLOUD_RUN_SERVICE" \
+            --project "$GCP_PROJECT_ID" \
+            --region "$GCP_REGION" \
+            --to-revisions "${PREVIOUS_REVISION}=100"
+
+      - name: Fail deployment after unsuccessful smoke test
+        if: steps.remote-smoke.outcome == 'failure'
+        run: |
+          echo "The deployed MCP failed validation. Previous traffic was restored when a prior revision existed." >&2
+          exit 1
+
+      - name: Publish deployment summary
+        env:
+          SERVICE_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          {
+            echo "### QaaS Graph MCP"
+            echo
+            echo "- Endpoint: ${SERVICE_URL}/mcp"
+            echo "- Image: ${IMAGE_URI}"
+            echo "- Region: ${GCP_REGION}"
+            echo "- Authentication: Authorization: Bearer <token>"
+          } >> "$GITHUB_STEP_SUMMARY"
