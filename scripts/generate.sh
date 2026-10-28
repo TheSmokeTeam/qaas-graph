@@ -9,9 +9,9 @@ force=""
 
 usage() {
   cat <<'EOF'
-Usage: scripts/generate.sh [--dependencies-only|--graphify-only] [--force]
+Usage: scripts/generate.sh [--flowchart-only|--graphify-only] [--force]
 
-  --dependencies-only  Generate graphs/repositories.{json,mmd,svg} and README
+  --flowchart-only     Generate the repository flowchart and README
   --graphify-only       Generate the merged code-level Graphify graph
   --force               Force Graphify to rescan every repository
 EOF
@@ -19,7 +19,7 @@ EOF
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --dependencies-only) mode="dependencies" ;;
+    --flowchart-only) mode="flowchart" ;;
     --graphify-only) mode="graphify" ;;
     --force) force="--force" ;;
     -h|--help) usage; exit 0 ;;
@@ -40,13 +40,13 @@ fi
 cd "$repo_dir"
 
 if [[ "$mode" != "graphify" ]]; then
-  python3 scripts/extract_dependencies.py \
+  python3 scripts/generate_flowchart.py \
     --registry "$registry" \
     --output-dir "$repo_dir/graphs" \
     --readme "$repo_dir/README.md"
 fi
 
-if [[ "$mode" != "dependencies" ]]; then
+if [[ "$mode" != "flowchart" ]]; then
   if ! command -v graphify >/dev/null 2>&1; then
     echo "graphify is required. Install pinned dependencies with: python3 -m pip install -r requirements.txt" >&2
     exit 1
@@ -63,7 +63,7 @@ if [[ "$mode" != "dependencies" ]]; then
       exit 1
     fi
     graph_files+=("$graph_file")
-  done < <(python3 scripts/extract_dependencies.py --registry "$registry" --list-repositories)
+  done < <(python3 scripts/generate_flowchart.py --registry "$registry" --list-repositories)
 
   graphify merge-graphs "${graph_files[@]}" --out "$repo_dir/graphify-out/graph.json"
   graphify export html --graph "$repo_dir/graphify-out/graph.json"

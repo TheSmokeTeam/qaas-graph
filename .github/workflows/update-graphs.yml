@@ -79,11 +79,6 @@ jobs:
           path: QaaS.Runner
           token: ${{ secrets.QAAS_GRAPH_TOKEN || github.token }}
 
-      - name: Install .NET
-        uses: actions/setup-dotnet@v5
-        with:
-          dotnet-version: 10.0.x
-
       - name: Install Python
         uses: actions/setup-python@v5
         with:
@@ -128,5 +123,5 @@ jobs:
               --base "$DEFAULT_BRANCH" \
               --head "$branch" \
               --title "chore: update ecosystem graphs" \
-              --body "Automated refresh of the evaluated MSBuild dependency graph and merged Graphify code graph."
+              --body "Automated refresh of the repository flowchart and merged Graphify code graph."
           fi

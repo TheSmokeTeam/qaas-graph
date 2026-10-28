@@ -28,7 +28,7 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         )
 
     def test_generation_is_rejected_outside_github_actions(self) -> None:
-        completed = self.run_generate("--dependencies-only")
+        completed = self.run_generate("--flowchart-only")
 
         self.assertEqual(completed.returncode, 1)
         self.assertIn("Graph generation is CI-only", completed.stderr)
@@ -50,6 +50,13 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertIn("repository_dispatch:", workflow)
         self.assertIn("types: [qaas-package-mirror-synced]", workflow)
         self.assertNotIn("schedule:", workflow)
+
+    def test_generation_supports_flowchart_and_graphify_modes(self) -> None:
+        generator = GENERATE.read_text(encoding="utf-8")
+
+        self.assertIn("--flowchart-only", generator)
+        self.assertIn("--graphify-only", generator)
+        self.assertIn("generate_flowchart.py", generator)
 
     def test_deploy_runs_after_generated_graph_artifacts_reach_main(self) -> None:
         workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")

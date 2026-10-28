@@ -28,9 +28,33 @@ repositories:
     path: ../QaaS.Runner
     url: https://github.com/TheSmokeTeam/QaaS.Runner.git
 
-# Add another named evaluation when a repository introduces conditional reference
-# modes. Every evaluation is merged into the same logical graph while retaining
-# the evaluation name on each reference.
-evaluations:
-  - name: default
-    properties: {}
+# Repository-level flowchart edges are explicit. Arrows point from the consuming
+# repository to the repository that produces its dependency.
+dependencies:
+  - source: QaaS.Common.Assertions
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Common.Generators
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Common.Probes
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Common.Processors
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Mocker
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Mocker
+    target: QaaS.Mocker.CommunicationObjects
+    label: PackageReference
+  - source: QaaS.Mocker.CommunicationObjects
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Runner
+    target: QaaS.Framework
+    label: PackageReference
+  - source: QaaS.Runner
+    target: QaaS.Mocker.CommunicationObjects
+    label: PackageReference
