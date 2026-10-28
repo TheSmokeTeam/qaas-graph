@@ -54,3 +54,7 @@ graphify-out/.graphify_uncached.txt
 graphify-out/.graphify_chunk_*.json
 graphify-out/.needs_update
 graphify-out/cost.json
+graphify-out/.graphify_learning.json
+graphify-out/.vocab.txt
+graphify-out/memory/
+graphify-out/reflections/

@@ -5,7 +5,7 @@ It keeps two complementary views:
 
 **[Open the interactive QaaS ecosystem graph](https://thesmoketeam.github.io/qaas-graph/)**
 
-- `graphs/repositories.json` is the evaluated MSBuild dependency model. It records repositories, projects, published package identities, `ProjectReference` edges, `PackageReference` edges, versions, target frameworks, evaluation modes, and source commit SHAs.
+- `graphs/repositories.mmd` and `graphs/repositories.svg` are the repository-level flowchart generated from the explicit relationships in `repositories.yml`.
 - `graphify-out/graph.json` and `graphify-out/graph.html` are the merged code-level Graphify graph and interactive visualization.
 
 Arrows point from the consuming repository to the repository that produces its dependency.
@@ -65,12 +65,10 @@ environment remains the single graph producer.
 
 ### How artifact changes are detected
 
-An artifact in this repository is a file generated from the checked-out QaaS
-source repositories rather than written manually. The committed graph artifacts
-are `graphs/repositories.json`, `graphs/repositories.mmd`,
-`graphs/repositories.svg`, `graphify-out/graph.json`, and
-`graphify-out/graph.html`. The generated Mermaid block in `README.md` is checked
-at the same time.
+An artifact in this repository is generated rather than edited manually. The
+committed artifacts are `graphs/repositories.mmd`, `graphs/repositories.svg`,
+`graphify-out/graph.json`, and `graphify-out/graph.html`. The generated Mermaid
+block in `README.md` is checked at the same time.
 
 After regeneration, the workflow runs:
 
@@ -99,18 +97,19 @@ Two PackageMirror modes intentionally do not dispatch a graph update:
 The PackageMirror `PACKAGE_MIRROR_TOKEN` must have `Contents: write` access to this
 repository so it can create the repository-dispatch event.
 
-The dependency extractor calls `dotnet msbuild` with `-getProperty` and `-getItem`,
-so imported props/targets and conditional items are evaluated by MSBuild rather than
-guessed from XML. If a repository needs more than one CI evaluation mode, declare
-them under `evaluations` in `repositories.yml`; their references are merged while
-the evaluation names remain attached to each edge.
+### Flowchart source of truth
+
+Repository nodes and dependency arrows are declared explicitly in
+`repositories.yml`. `scripts/generate_flowchart.py` validates that every arrow
+references registered repositories, then regenerates the Mermaid, SVG, and README
+views deterministically. Update the registry when the high-level repository flow
+changes; the flowchart is not inferred from project files.
 
 ## Outputs
 
 | Path | Purpose | Commit? |
 | --- | --- | --- |
-| `repositories.yml` | Explicit source repository registry and MSBuild evaluations | Yes |
-| `graphs/repositories.json` | Detailed deterministic .NET dependency data | Yes |
+| `repositories.yml` | Source repository registry and explicit flowchart dependencies | Yes |
 | `graphs/repositories.mmd` | GitHub-renderable Mermaid source | Yes |
 | `graphs/repositories.svg` | Standalone repository overview | Yes |
 | `graphify-out/graph.json` | Merged code knowledge graph | Yes |
@@ -134,10 +133,10 @@ python3 -m unittest discover -s tests -v
 
 `.github/workflows/update-graphs.yml` is the only supported graph-generation entry
 point. It rebuilds the graphs on demand or after a `qaas-package-mirror-synced`
-dispatch. It records each checked-out source commit in `graphs/repositories.json`
-and opens or updates an `automation/update-graphs` pull request when committed
-artifacts change. Private source repositories require a `QAAS_GRAPH_TOKEN`
-repository secret with read access; public repositories can use the workflow token.
+dispatch. It opens or updates an `automation/update-graphs` pull request when
+committed artifacts change. Private source repositories require a
+`QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use
+the workflow token.
 
 `.github/workflows/deploy-pages.yml` publishes `graphify-out/graph.html` as the
 site root whenever generated graph artifacts or the deployment workflow change on
