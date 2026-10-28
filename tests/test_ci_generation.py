@@ -28,10 +28,10 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         )
 
     def test_generation_is_rejected_outside_github_actions(self) -> None:
-        completed = self.run_generate("--flowchart-only")
+        completed = self.run_generate()
 
         self.assertEqual(completed.returncode, 1)
-        self.assertIn("Graph generation is CI-only", completed.stderr)
+        self.assertIn("Graphify generation is CI-only", completed.stderr)
         self.assertIn("actions/workflows/update-graphs.yml", completed.stderr)
 
     def test_help_remains_available_without_generating(self) -> None:
@@ -51,19 +51,18 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertIn("types: [qaas-package-mirror-synced]", workflow)
         self.assertNotIn("schedule:", workflow)
 
-    def test_generation_supports_flowchart_and_graphify_modes(self) -> None:
+    def test_generation_uses_the_repository_registry_for_graphify(self) -> None:
         generator = GENERATE.read_text(encoding="utf-8")
 
-        self.assertIn("--flowchart-only", generator)
-        self.assertIn("--graphify-only", generator)
-        self.assertIn("generate_flowchart.py", generator)
+        self.assertIn("list_repositories.py", generator)
+        self.assertIn("graphify extract", generator)
+        self.assertIn("graphify merge-graphs", generator)
 
     def test_deploy_runs_after_generated_graph_artifacts_reach_main(self) -> None:
         workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")
 
         self.assertIn("branches: [main]", workflow)
         self.assertIn("- graphify-out/**", workflow)
-        self.assertIn("- graphs/**", workflow)
 
 
 if __name__ == "__main__":
