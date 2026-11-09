@@ -101,8 +101,14 @@ scans continue to respect each source repository's own ignore rules.
 Code-only checks may still be run locally; they do not update graph artifacts:
 
 ```bash
-python3 -m unittest discover -s tests -v
+uv run --locked python -m unittest discover -s tests -v
 ```
+
+The repository is a non-package Python 3.12 project. Its committed `uv.lock`
+pins `graphifyy==0.9.90` and `PyYAML==6.0.3`, and `pyproject.toml` requires
+uv 0.13.7. There is no global Graphify or `requirements.txt` fallback: use the
+locked project for local tests and CI tooling. Graph generation itself remains
+CI-only.
 
 ## CI
 

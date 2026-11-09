@@ -34,23 +34,18 @@ fi
 
 cd "$repo_dir"
 
-if ! command -v graphify >/dev/null 2>&1; then
-  echo "graphify is required. Install pinned dependencies with: python3 -m pip install -r requirements.txt" >&2
-  exit 1
-fi
-
 mkdir -p "$repo_dir/.graphify-cache" "$repo_dir/graphify-out"
 graph_files=()
 while IFS=$'\t' read -r name path; do
   output="$repo_dir/.graphify-cache/$name"
-  graphify extract "$path" --code-only --out "$output" $force
+  uv run --project "$repo_dir" --locked graphify extract "$path" --code-only --out "$output" $force
   graph_file="$output/graphify-out/graph.json"
   if [[ ! -f "$graph_file" ]]; then
     echo "Graphify did not create $graph_file" >&2
     exit 1
   fi
   graph_files+=("$graph_file")
-done < <(python3 scripts/list_repositories.py --registry "$registry")
+done < <(uv run --project "$repo_dir" --locked python scripts/list_repositories.py --registry "$registry")
 
-graphify merge-graphs "${graph_files[@]}" --out "$repo_dir/graphify-out/graph.json"
-graphify export html --graph "$repo_dir/graphify-out/graph.json"
+uv run --project "$repo_dir" --locked graphify merge-graphs "${graph_files[@]}" --out "$repo_dir/graphify-out/graph.json"
+uv run --project "$repo_dir" --locked graphify export html --graph "$repo_dir/graphify-out/graph.json"

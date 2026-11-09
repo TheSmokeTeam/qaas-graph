@@ -1,0 +1,13 @@
+[project]
+name = "qaas-graph-tooling"
+version = "0.1.0"
+description = "Locked tooling for generating and querying the QaaS ecosystem graph"
+requires-python = ">=3.12"
+dependencies = [
+  "graphifyy==0.9.90",
+  "PyYAML==6.0.3",
+]
+
+[tool.uv]
+package = false
+required-version = "==0.13.7"
