@@ -51,6 +51,14 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertIn("types: [qaas-package-mirror-synced]", workflow)
         self.assertNotIn("schedule:", workflow)
 
+    def test_update_workflow_checks_only_open_pull_requests_for_automation_branch(
+        self,
+    ) -> None:
+        workflow = UPDATE_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn('gh pr list --state open --head "$branch"', workflow)
+        self.assertNotIn('gh pr view "$branch"', workflow)
+
     def test_generation_uses_the_repository_registry_for_graphify(self) -> None:
         generator = GENERATE.read_text(encoding="utf-8")
 

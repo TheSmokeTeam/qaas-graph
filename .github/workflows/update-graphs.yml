@@ -118,7 +118,8 @@ jobs:
           git commit -m "chore: update Graphify graph"
           git push --force-with-lease origin "$branch"
 
-          if ! gh pr view "$branch" --json url >/dev/null 2>&1; then
+          open_pr_url="$(gh pr list --state open --head "$branch" --json url --jq '.[0].url // empty')"
+          if [[ -z "$open_pr_url" ]]; then
             gh pr create \
               --base "$DEFAULT_BRANCH" \
               --head "$branch" \
