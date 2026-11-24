@@ -35,7 +35,7 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         completed = self.run_generate()
 
         self.assertEqual(completed.returncode, 1)
-        self.assertIn("Graphify generation is CI-only", completed.stderr)
+        self.assertIn("Graph generation is CI-only", completed.stderr)
         self.assertIn("actions/workflows/update-graphs.yml", completed.stderr)
 
     def test_help_remains_available_without_generating(self) -> None:
@@ -95,18 +95,24 @@ class CIGenerationBoundaryTests(unittest.TestCase):
         self.assertNotIn("pip install", workflow)
         self.assertNotIn("requirements.txt", workflow)
 
-    def test_generation_uses_the_repository_registry_for_graphify(self) -> None:
+    def test_generation_uses_the_registry_for_flowchart_and_graphify(self) -> None:
         generator = GENERATE.read_text(encoding="utf-8")
 
-        self.assertIn("list_repositories.py", generator)
         locked_prefix = 'uv run --project "$repo_dir" --locked'
-        self.assertIn(
-            f'{locked_prefix} python scripts/list_repositories.py', generator
-        )
+        flowchart_command = f"{locked_prefix} python scripts/generate_flowchart.py"
+        self.assertEqual(generator.count(flowchart_command), 2)
         self.assertIn(f"{locked_prefix} graphify extract", generator)
         self.assertIn(f"{locked_prefix} graphify merge-graphs", generator)
         self.assertIn(f"{locked_prefix} graphify export html", generator)
         self.assertNotIn("command -v graphify", generator)
+
+    def test_update_workflow_tracks_all_generated_graph_outputs(self) -> None:
+        workflow = UPDATE_WORKFLOW.read_text(encoding="utf-8")
+
+        self.assertIn(
+            "git diff --quiet -- README.md graphs graphify-out", workflow
+        )
+        self.assertIn("git add README.md graphs graphify-out", workflow)
 
     def test_deploy_runs_after_generated_graph_artifacts_reach_main(self) -> None:
         workflow = DEPLOY_WORKFLOW.read_text(encoding="utf-8")

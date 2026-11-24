@@ -25,7 +25,7 @@ done
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" || "${QAAS_GRAPH_CI:-}" != "true" ]]; then
   cat >&2 <<'EOF'
-Graphify generation is CI-only.
+Graph generation is CI-only.
 Run the "Update ecosystem graphs" workflow in GitHub Actions instead:
 https://github.com/TheSmokeTeam/qaas-graph/actions/workflows/update-graphs.yml
 EOF
@@ -33,6 +33,11 @@ EOF
 fi
 
 cd "$repo_dir"
+
+uv run --project "$repo_dir" --locked python scripts/generate_flowchart.py \
+  --registry "$registry" \
+  --output-dir "$repo_dir/graphs" \
+  --readme "$repo_dir/README.md"
 
 mkdir -p "$repo_dir/.graphify-cache" "$repo_dir/graphify-out"
 graph_files=()
@@ -45,7 +50,7 @@ while IFS=$'\t' read -r name path; do
     exit 1
   fi
   graph_files+=("$graph_file")
-done < <(uv run --project "$repo_dir" --locked python scripts/list_repositories.py --registry "$registry")
+done < <(uv run --project "$repo_dir" --locked python scripts/generate_flowchart.py --registry "$registry" --list-repositories)
 
 uv run --project "$repo_dir" --locked graphify merge-graphs "${graph_files[@]}" --out "$repo_dir/graphify-out/graph.json"
 uv run --project "$repo_dir" --locked graphify export html --graph "$repo_dir/graphify-out/graph.json"

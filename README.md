@@ -5,17 +5,38 @@ It keeps two complementary views:
 
 **[Open the interactive QaaS ecosystem graph](https://thesmoketeam.github.io/qaas-graph/)**
 
-- `graphs/repositories.mmd` is the repository-level dependency flowchart.
+- `graphs/repositories.mmd` is the repository-level dependency flowchart generated from the explicit relationships in `repositories.yml`.
 - `graphify-out/graph.json` and `graphify-out/graph.html` are the merged code-level Graphify graph and interactive visualization.
 
 Arrows point from the consuming repository to the repository that produces its dependency.
 
-[View the QaaS repository dependency flowchart](graphs/repositories.mmd)
+<!-- repository-graph:start -->
+```mermaid
+flowchart LR
+    R0["QaaS.Common.Assertions"]
+    R1["QaaS.Common.Generators"]
+    R2["QaaS.Common.Probes"]
+    R3["QaaS.Common.Processors"]
+    R4["QaaS.Framework"]
+    R5["QaaS.Mocker"]
+    R6["QaaS.Mocker.CommunicationObjects"]
+    R7["QaaS.Runner"]
+    R0 -->|"PackageReference"| R4
+    R1 -->|"PackageReference"| R4
+    R2 -->|"PackageReference"| R4
+    R3 -->|"PackageReference"| R4
+    R5 -->|"PackageReference"| R4
+    R5 -->|"PackageReference"| R6
+    R6 -->|"PackageReference"| R4
+    R7 -->|"PackageReference"| R4
+    R7 -->|"PackageReference"| R6
+```
+<!-- repository-graph:end -->
 
-## Update the Graphify graph
+## Update the graphs
 
-Graphify generation is CI-only. Do not clone the QaaS source repositories or
-regenerate Graphify artifacts on a workstation.
+Graph generation is CI-only. Do not clone the QaaS source repositories or
+regenerate graph artifacts on a workstation.
 
 To request an update, run the
 [Update ecosystem graphs workflow](https://github.com/TheSmokeTeam/qaas-graph/actions/workflows/update-graphs.yml)
@@ -23,11 +44,11 @@ from the GitHub Actions page. The same workflow accepts the
 `qaas-package-mirror-synced` repository-dispatch event emitted after a successful
 full `QaaS.PackageMirror` sync. It has no scheduled run.
 
-The workflow checks out every source repository, runs the tests, rebuilds the
-Graphify graph, and opens or refreshes the `automation/update-graphs` pull request
-when the committed Graphify artifacts changed. Review and merge that pull request
-entirely on GitHub. `scripts/generate.sh` intentionally refuses to run outside
-GitHub Actions so the CI environment remains the single Graphify producer.
+The workflow checks out every source repository, runs the tests, rebuilds both
+graph views, and opens or refreshes the `automation/update-graphs` pull request
+when committed artifacts changed. Review and merge that pull request entirely on
+GitHub. `scripts/generate.sh` intentionally refuses to run outside GitHub Actions
+so the CI environment remains the single graph producer.
 
 ### Automation flow
 
@@ -35,7 +56,7 @@ GitHub Actions so the CI environment remains the single Graphify producer.
 2. If the sync fails, the chain stops. If it succeeds, PackageMirror dispatches
    the `qaas-package-mirror-synced` event to this repository.
 3. The `Update ecosystem graphs` workflow checks out the registered source
-   repositories, runs the tests, and regenerates the Graphify artifacts.
+   repositories, runs the tests, and regenerates the graph artifacts.
 4. If the artifacts are unchanged, the workflow finishes without a pull request.
 5. If they changed, the workflow opens or updates the
    `automation/update-graphs` pull request.
@@ -44,13 +65,14 @@ GitHub Actions so the CI environment remains the single Graphify producer.
 
 ### How artifact changes are detected
 
-The generated artifacts are `graphify-out/graph.json` and
-`graphify-out/graph.html`.
+The generated artifacts are `graphs/repositories.mmd`,
+`graphify-out/graph.json`, and `graphify-out/graph.html`. The marker-delimited
+Mermaid block in this README is generated from the same source at the same time.
 
 After regeneration, the workflow runs:
 
 ```bash
-git diff --quiet -- graphify-out
+git diff --quiet -- README.md graphs graphify-out
 ```
 
 Git compares the regenerated contents with the versions in the commit that the
@@ -60,7 +82,7 @@ request. If any content differs, the command reports a difference and CI commits
 those paths to `automation/update-graphs`, then opens or updates its pull request.
 
 This use of *artifact* is distinct from a temporary GitHub Actions artifact. The
-Graphify files above are committed repository outputs. During deployment,
+graph files above are committed repository outputs. During deployment,
 `actions/upload-pages-artifact` separately packages `graphify-out/graph.html` for
 GitHub Pages.
 
@@ -76,17 +98,20 @@ repository so it can create the repository-dispatch event.
 
 ### Repository registry and flowchart
 
-`repositories.yml` lists only the source repositories that Graphify scans. The
-dependency flowchart is the static `graphs/repositories.mmd` documentation file;
-the graph-update workflow does not regenerate or include it in automated pull
-requests.
+`repositories.yml` lists the source repositories that Graphify scans and the
+explicit dependency edges shown in the repository flowchart.
+`scripts/generate_flowchart.py` validates that every edge references registered
+repositories, then deterministically regenerates `graphs/repositories.mmd` and
+the Mermaid block in this README. Update the registry when the high-level
+repository flow changes; the flowchart is not inferred from project files.
 
 ## Outputs
 
 | Path | Purpose | Commit? |
 | --- | --- | --- |
-| `repositories.yml` | Source repository registry for Graphify | Yes |
-| `graphs/repositories.mmd` | Static repository dependency flowchart | Yes |
+| `repositories.yml` | Source repository registry and explicit flowchart dependencies | Yes |
+| `graphs/repositories.mmd` | Generated repository dependency flowchart | Yes |
+| `README.md` Mermaid block | Generated embedded repository flowchart | Yes |
 | `graphify-out/graph.json` | Merged code knowledge graph | Yes |
 | `graphify-out/graph.html` | Interactive code graph | Yes |
 | `.graphify-cache/` | Per-repository extraction cache | No |
@@ -107,15 +132,15 @@ uv run --locked python -m unittest discover -s tests -v
 The repository is a non-package Python 3.12 project. Its committed `uv.lock`
 pins `graphifyy==0.9.90` and `PyYAML==6.0.3`, and `pyproject.toml` requires
 uv 0.13.7. There is no global Graphify or `requirements.txt` fallback: use the
-locked project for local tests and CI tooling. Graph generation itself remains
+locked project for local tests and CI tooling. Graph artifact generation remains
 CI-only.
 
 ## CI
 
-`.github/workflows/update-graphs.yml` is the only supported Graphify-generation
-entry point. It rebuilds the Graphify graph on demand or after a
+`.github/workflows/update-graphs.yml` is the only supported graph-generation
+entry point. It rebuilds both graph views on demand or after a
 `qaas-package-mirror-synced` dispatch. It opens or updates an
-`automation/update-graphs` pull request when Graphify artifacts change. Private
+`automation/update-graphs` pull request when generated artifacts change. Private
 source repositories require a
 `QAAS_GRAPH_TOKEN` repository secret with read access; public repositories can use
 the workflow token.
