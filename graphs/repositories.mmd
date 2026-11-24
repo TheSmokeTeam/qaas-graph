@@ -1,0 +1,10 @@
+flowchart LR
+    assertions[QaaS.Common.Assertions] -->|PackageReference| framework[QaaS.Framework]
+    generators[QaaS.Common.Generators] -->|PackageReference| framework
+    probes[QaaS.Common.Probes] -->|PackageReference| framework
+    processors[QaaS.Common.Processors] -->|PackageReference| framework
+    mocker[QaaS.Mocker] -->|PackageReference| framework
+    mocker -->|PackageReference| communicationObjects[QaaS.Mocker.CommunicationObjects]
+    communicationObjects -->|PackageReference| framework
+    runner[QaaS.Runner] -->|PackageReference| framework
+    runner -->|PackageReference| communicationObjects

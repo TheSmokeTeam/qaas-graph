@@ -5,12 +5,12 @@ It keeps two complementary views:
 
 **[Open the interactive QaaS ecosystem graph](https://thesmoketeam.github.io/qaas-graph/)**
 
-- `graphs/repositories.svg` is the repository-level dependency flowchart.
+- `graphs/repositories.mmd` is the repository-level dependency flowchart.
 - `graphify-out/graph.json` and `graphify-out/graph.html` are the merged code-level Graphify graph and interactive visualization.
 
 Arrows point from the consuming repository to the repository that produces its dependency.
 
-![QaaS repository dependency flowchart](graphs/repositories.svg)
+[View the QaaS repository dependency flowchart](graphs/repositories.mmd)
 
 ## Update the Graphify graph
 
@@ -77,7 +77,7 @@ repository so it can create the repository-dispatch event.
 ### Repository registry and flowchart
 
 `repositories.yml` lists only the source repositories that Graphify scans. The
-dependency flowchart is the static `graphs/repositories.svg` documentation file;
+dependency flowchart is the static `graphs/repositories.mmd` documentation file;
 the graph-update workflow does not regenerate or include it in automated pull
 requests.
 
@@ -86,7 +86,7 @@ requests.
 | Path | Purpose | Commit? |
 | --- | --- | --- |
 | `repositories.yml` | Source repository registry for Graphify | Yes |
-| `graphs/repositories.svg` | Static repository dependency flowchart | Yes |
+| `graphs/repositories.mmd` | Static repository dependency flowchart | Yes |
 | `graphify-out/graph.json` | Merged code knowledge graph | Yes |
 | `graphify-out/graph.html` | Interactive code graph | Yes |
 | `.graphify-cache/` | Per-repository extraction cache | No |
